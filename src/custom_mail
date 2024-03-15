@@ -1,0 +1,62 @@
+<?php
+
+
+//dilo surucu
+
+
+class Mail
+{
+    private $socket;
+    public function __construct()
+    {
+        $this->socket = stream_socket_client("tcp://smtp.mailtrap.io:25");
+    }
+
+    private function sendCommand(string $command): string
+    {
+        if (!$this->socket) {
+            throw new RuntimeException('SMTP server connection not established.');
+        }
+
+        fwrite($this->socket, "$command\r\n");
+
+        $response = '';
+        while ($line = fgets($this->socket)) {
+            $response .= $line;
+            if (str_starts_with($line, '250')) {
+                break;
+            }
+        }
+
+        return $response;
+    }
+
+    public function send(string $from, string $to, string $subject, string $message): bool
+    {
+        $this->sendCommand('EHLO example.com');
+        $this->sendCommand('AUTH LOGIN');
+        $username = 'yourname';
+        $this->sendCommand(base64_encode($username));
+        $password = 'yourpassword';
+        $this->sendCommand(base64_encode($password));
+        $this->sendCommand("MAIL FROM: <$from>");
+        $this->sendCommand("RCPT TO: <$to>");
+        $this->sendCommand('DATA');
+        $this->sendCommand("Subject: $subject");
+        $this->sendCommand('');
+        $this->sendCommand($message);
+        $this->sendCommand('.');
+        $response = $this->sendCommand('QUIT');
+        fclose($this->socket);
+        return str_starts_with($response, 221);
+    }
+}
+
+$mailer = new Mail();
+
+$mailer->send(
+    'sender@example.com',
+    'developer@diloabinininyeri.com',
+    'Test email',
+    'This is a test email from Mailtrap.'
+);
