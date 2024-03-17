@@ -42,7 +42,7 @@ class Command
 
 }
 
-class Calendar
+readonly class Calendar
  
 {
     const SATURDAY = 'Sat';
